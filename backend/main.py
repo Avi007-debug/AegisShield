@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
+from graph.engine import G, SCORES, SUPERSPREADER_ID, simulate_containment, serialize_graph
 
 app = FastAPI(title='AegisShield API')
 app.add_middleware(CORSMiddleware, allow_origins=['*'],
@@ -42,24 +43,46 @@ async def analyze(req: AnalyzeRequest):
     return {'nlp': STATIC_NLP, 'graph': STATIC_GRAPH}  
 
 @app.get('/graph')
-async def get_graph(): return STATIC_GRAPH  
+async def get_graph():
+    return serialize_graph(G, SUPERSPREADER_ID)
 @app.post('/contain/{node_id}')
 async def contain(node_id: int):
-    return {'node_id':node_id,'reach_before':43,'reach_after':11,
-            'reduction_pct':74.4,'removed_edges':8,'grayed_nodes':[3,7,12,20]}
+    return simulate_containment(G, node_id)
 
 @app.get('/threat-scores')
 async def threat_scores():
-    return {'scores':[{'node_id':1,'threat_score':0.91,'bc_score':0.88,
-        'pr_score':0.95,'rank':1,'type':'superspreader'}],
-        'superspreader_id':1,'formula':'0.6 * bc_normalized + 0.4 * pr_normalized'}
+    ranked = sorted(SCORES.items(), key=lambda x: x[1]['threat_score'], reverse=True)
+    scores_list = [
+        {
+            'node_id':      node,
+            'threat_score': data['threat_score'],
+            'bc_score':     data['bc_score'],
+            'pr_score':     data['pr_score'],
+            'rank':         i + 1,
+            'type':         G.nodes[node].get('type', 'genuine')
+        }
+        for i, (node, data) in enumerate(ranked)
+    ]
+    return {
+        'scores':           scores_list,
+        'superspreader_id': SUPERSPREADER_ID,
+        'formula':          '0.6 * bc_normalized + 0.4 * pr_normalized'
+    }
 
 @app.get('/cluster-info')
 async def cluster_info():
-    return {'clusters':[{'cluster_id':'Campaign_A','node_count':15,
-        'nodes':[20,21,22,23,24,25,26,27,28,29,30,31,32,33,34],
-        'sync_window_ms':2000,'detection_method':'time-window synchronization'}],
-        'total_clustered_nodes':15,'unclustered_nodes':35}
+    cluster_nodes = [n for n in G.nodes() if G.nodes[n].get('cluster_id') == 'Campaign_A']
+    return {
+        'clusters': [{
+            'cluster_id':       'Campaign_A',
+            'node_count':       len(cluster_nodes),
+            'nodes':            cluster_nodes,
+            'sync_window_ms':   2000,
+            'detection_method': 'time-window synchronization'
+        }],
+        'total_clustered_nodes': len(cluster_nodes),
+        'unclustered_nodes':     50 - len(cluster_nodes)
+    }
 
 @app.get('/audit-log')
 async def audit_log():
