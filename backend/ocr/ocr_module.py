@@ -1,7 +1,7 @@
 import easyocr
 
 # Initialize OCR reader
-reader = easyocr.Reader(['en'])
+reader = easyocr.Reader(['en'], gpu=False)
 
 def extract_text(image_path):
     result = reader.readtext(image_path)
