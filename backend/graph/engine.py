@@ -14,7 +14,7 @@ def build_graph(n=50, m=3, seed=42) -> nx.DiGraph:
     for u, v in G_ba.edges():
         DG.add_edge(u + 1, v + 1)  # relabel 0..n-2 → 1..n-1, hub -> follower
 
-    # Connect patient zero to exactly one hub: the highest out-degree node in
+    # Connect zero to exactly one hub: the highest out-degree node in
     # the BA subgraph.  One unknown account → one mega-amplifier → the network.
     top_hub = max(range(1, n), key=lambda x: DG.out_degree(x))
     DG.add_edge(0, top_hub)
