@@ -76,11 +76,11 @@ export interface ClusterInfoResponse {
 // ============ Audit Types ============
 export interface AuditEntry {
   timestamp: string
+  signature_id: string
+  regulatory_order_id: string
   action: string
-  node_id: number
-  operator: string
-  reach_reduction_pct: number
-  approved: boolean
+  status: 'FLAGGED' | 'COMPLIANT' | string
+  compliance_ref: string
 }
 
 export interface AuditLogResponse {

@@ -1,5 +1,5 @@
 import { useAuditLog } from '@/hooks/useApi'
-import { ScrollText, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { ScrollText, Loader2, AlertTriangle, CheckCircle } from 'lucide-react'
 
 export function AuditLogPanel() {
   const { data, isLoading } = useAuditLog()
@@ -24,43 +24,52 @@ export function AuditLogPanel() {
       )}
 
       <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
-        {data?.log.map((entry, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-border bg-muted/20 p-3 transition-colors hover:border-border/80 hover:bg-muted/40"
-          >
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {new Date(entry.timestamp).toLocaleString([], {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })}
-              </span>
-              {entry.approved ? (
-                <span className="flex items-center gap-1 rounded-full bg-safe/10 px-2 py-px font-mono text-[9px] font-semibold text-safe">
-                  <CheckCircle className="h-2.5 w-2.5" /> Approved
+        {data?.log.map((entry, i) => {
+          const isFlagged = entry.status === 'FLAGGED'
+          return (
+            <div
+              key={i}
+              className="rounded-xl border border-border bg-muted/20 p-3 transition-colors hover:border-border/80 hover:bg-muted/40"
+            >
+              {/* Row 1: timestamp + status badge */}
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                  {new Date(entry.timestamp).toLocaleString([], {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}
                 </span>
-              ) : (
-                <span className="flex items-center gap-1 rounded-full bg-threat/10 px-2 py-px font-mono text-[9px] font-semibold text-threat">
-                  <XCircle className="h-2.5 w-2.5" /> Denied
+                {isFlagged ? (
+                  <span className="flex items-center gap-1 rounded-full bg-threat/10 px-2 py-px font-mono text-[9px] font-semibold text-threat">
+                    <AlertTriangle className="h-2.5 w-2.5" /> FLAGGED
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 rounded-full bg-safe/10 px-2 py-px font-mono text-[9px] font-semibold text-safe">
+                    <CheckCircle className="h-2.5 w-2.5" /> COMPLIANT
+                  </span>
+                )}
+              </div>
+
+              {/* Row 2: action description */}
+              <p className="mb-1.5 font-mono text-xs text-foreground">
+                {entry.action}
+              </p>
+
+              {/* Row 3: regulatory metadata */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] text-muted-foreground">
+                <span>
+                  Order&nbsp;<span className="text-foreground">{entry.regulatory_order_id}</span>
                 </span>
-              )}
+                <span className="ml-auto">
+                  Ref&nbsp;<span className="text-foreground">{entry.compliance_ref}</span>
+                </span>
+              </div>
             </div>
-            <p className="mb-1.5 font-mono text-xs text-foreground">
-              {entry.action.replace(/_/g, ' ')}
-            </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] text-muted-foreground">
-              <span>Node <span className="text-foreground">#{entry.node_id}</span></span>
-              <span>Op <span className="text-foreground">{entry.operator}</span></span>
-              <span className="ml-auto">
-                Δ reach <span className="font-semibold text-safe">{entry.reach_reduction_pct}%</span>
-              </span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
 
         {data?.log.length === 0 && (
           <div className="py-8 text-center">

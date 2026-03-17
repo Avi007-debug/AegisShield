@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { AlertTriangle, Bell, AlertCircle, Info } from 'lucide-react'
+import { useAuditLog } from '@/hooks/useApi'
 
 interface Alert {
   id: number
@@ -37,48 +38,36 @@ const typeConfig = {
 }
 
 export function AlertsPanel() {
-  const isFirstMount = useRef(true)
-
-  const [alerts, setAlerts] = useState<Alert[]>([
-    { id: 1, type: 'critical', message: 'Superspreader node detected — high centrality score', timestamp: new Date().toISOString() },
-    { id: 2, type: 'warning',  message: 'Bot cluster Campaign_A activity spike',              timestamp: new Date(Date.now() - 60000).toISOString() },
-    { id: 3, type: 'info',     message: 'Graph topology updated — 50 nodes active',           timestamp: new Date(Date.now() - 120000).toISOString() },
-  ])
+  const { data } = useAuditLog()
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const prevLogLen = useRef(0)
 
   useEffect(() => {
-    // Mark initial alerts as slide-in too (on first mount)
-    setAlerts((prev) => prev.map((a) => ({ ...a, isNew: true })))
-    const clearTimer = setTimeout(() => {
-      setAlerts((prev) => prev.map((a) => ({ ...a, isNew: false })))
-      isFirstMount.current = false
-    }, 800)
+    if (!data?.log) return
 
-    const msgs = [
-      'Anomalous propagation velocity detected',
-      'New coordinated cluster forming',
-      'Containment recommendation: Node #1',
-      'Misinformation confidence > 90%',
-    ]
-    const interval = setInterval(() => {
-      const newAlert: Alert = {
-        id: Date.now(),
-        type: 'warning',
-        message: msgs[Math.floor(Math.random() * msgs.length)],
-        timestamp: new Date().toISOString(),
-        isNew: true,
+    // Transform audit log entries into Alert format
+    const mappedAlerts: Alert[] = data.log.slice(0, 10).map((entry, i) => {
+      const isCritical = entry.status === 'FLAGGED'
+      return {
+        id: i, // Use index or hash since timestamp might clash
+        type: isCritical ? 'critical' : 'info',
+        message: entry.action,
+        timestamp: entry.timestamp,
+        isNew: data.log.length > prevLogLen.current && i < (data.log.length - prevLogLen.current)
       }
-      setAlerts((prev) => [newAlert, ...prev.slice(0, 9)])
-      // Clear isNew after animation
-      setTimeout(() => {
-        setAlerts((prev) => prev.map((a) => a.id === newAlert.id ? { ...a, isNew: false } : a))
-      }, 600)
-    }, 15000)
+    })
 
-    return () => {
-      clearTimeout(clearTimer)
-      clearInterval(interval)
+    setAlerts(mappedAlerts)
+
+    if (data.log.length > prevLogLen.current) {
+      // Clear isNew animation after delay
+      const timer = setTimeout(() => {
+        setAlerts(prev => prev.map(a => ({ ...a, isNew: false })))
+      }, 800)
+      prevLogLen.current = data.log.length
+      return () => clearTimeout(timer)
     }
-  }, [])
+  }, [data?.log])
 
   const criticalCount = alerts.filter((a) => a.type === 'critical').length
 

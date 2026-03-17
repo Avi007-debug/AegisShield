@@ -8,6 +8,7 @@ import { useTypewriter } from '@/hooks/useTypewriter'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useIntersection } from '@/hooks/useIntersection'
 import { RevealOnScroll } from '@/components/RevealOnScroll'
+import { useGraph } from '@/hooks/useApi'
 
 const features = [
   {
@@ -33,10 +34,10 @@ const features = [
 ]
 
 const rawStats = [
-  { label: 'Detection Accuracy', raw: '97.3%', icon: Zap,   delta: '+2.1%' },
-  { label: 'Nodes Monitored',    raw: '50+',   icon: Globe,  delta: 'Active' },
-  { label: 'Threat Models',      raw: '3',     icon: Shield, delta: 'Deployed' },
-  { label: 'Compliance',         raw: '100%',  icon: Lock,   delta: 'Certified' },
+  { label: 'Detection Accuracy', raw: '97.3%', icon: Zap, delta: '+2.1%' },
+  { label: 'Nodes Monitored', raw: '50+', icon: Globe, delta: 'Active' },
+  { label: 'Threat Models', raw: '3', icon: Shield, delta: 'Deployed' },
+  { label: 'Compliance', raw: '100%', icon: Lock, delta: 'Certified' },
 ]
 
 const steps = [
@@ -70,8 +71,16 @@ function StatNumber({ raw, active }: { raw: string; active: boolean }) {
 }
 
 export function HomePage() {
+  const { data: graph } = useGraph()
   const { displayed: typedWord, done: typingDone } = useTypewriter('Misinformation', 52, 650)
   const { ref: statsRef, isVisible: statsVisible } = useIntersection()
+
+  const stats = [
+    { label: 'Detection Accuracy', raw: '97.3%', icon: Zap, delta: '+2.1%' },
+    { label: 'Nodes Monitored', raw: `${graph?.node_count ?? 0}+`, icon: Globe, delta: 'Active' },
+    { label: 'Network Edges', raw: `${graph?.edge_count ?? 0}`, icon: Network, delta: 'Mapped' },
+    { label: 'Compliance', raw: '100%', icon: Lock, delta: 'Certified' },
+  ]
 
   return (
     <div className="page-content">
@@ -145,12 +154,11 @@ export function HomePage() {
         className="border-y border-border bg-card/40"
       >
         <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4">
-          {rawStats.map((stat, i) => (
+          {stats.map((stat, i) => (
             <div
               key={stat.label}
-              className={`flex flex-col items-center px-6 py-10 text-center transition-all duration-300 hover:bg-primary/3 ${
-                i < rawStats.length - 1 ? 'border-r border-border' : ''
-              }`}
+              className={`flex flex-col items-center px-6 py-10 text-center transition-all duration-300 hover:bg-primary/3 ${i < stats.length - 1 ? 'border-r border-border' : ''
+                }`}
               style={{
                 opacity: statsVisible ? 1 : 0,
                 transform: statsVisible ? 'none' : 'translateY(16px)',
