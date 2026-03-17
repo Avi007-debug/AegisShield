@@ -6,8 +6,7 @@ import shutil
 import uuid
 import os
 
-# NLP + OCR
-from backend.nlp.classifier import predict
+# OCR
 from backend.ocr.ocr_module import extract_text
 
 # Graph engine
@@ -17,8 +16,9 @@ from backend.graph.engine import (
     SUPERSPREADER_ID,
     simulate_containment,
     serialize_graph,
-    simulate_spread
+    simulate_spread, 
 )
+from backend.graph.content_ingestor import ingest_content
 
 # Propagation classifier
 from backend.propagation_classifier.prop_classifier import classify_propagation_pattern
@@ -33,10 +33,6 @@ app.add_middleware(
 )
 
 # -------- Request Models --------
-
-class ClassifyRequest(BaseModel):
-    text: str
-
 
 class AnalyzeRequest(BaseModel):
     text: Optional[str] = None
@@ -64,30 +60,15 @@ async def health():
     return {"status": "ok", "version": "1.0.0"}
 
 
-# -------- NLP Classification --------
-
-@app.post("/classify")
-async def classify_endpoint(req: ClassifyRequest):
-
-    result = predict(req.text)
-
-    return result
-
-
 # -------- OCR Endpoint --------
 
 @app.post("/extract-text")
 async def extract_text_endpoint(file: UploadFile):
-
     temp_path = f"temp_{uuid.uuid4()}.png"
-
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-
     extracted = extract_text(temp_path)
-
     os.remove(temp_path)
-
     return {"extracted_text": extracted}
 
 
@@ -95,33 +76,35 @@ async def extract_text_endpoint(file: UploadFile):
 
 @app.post("/analyze")
 async def analyze(req: AnalyzeRequest):
+    text = req.text
+    if not text:
+        return {"error": "no text provided"}
 
-    if req.text:
-        nlp_result = predict(req.text)
-    else:
-        nlp_result = STATIC_NLP
+    # Step 1: Ingest content → fingerprint + infection probability
+    content_data = ingest_content(text)
 
-    graph_data = serialize_graph(G, SUPERSPREADER_ID)
+    # Step 2: Attach to Node 0
+    G.nodes[0]['content_hash']   = content_data['content_hash']
+    G.nodes[0]['infection_prob'] = content_data['infection_prob']
+
+    # Step 3: Run both regimes using the unified simulate_spread
+    organic_timeline     = simulate_spread(G, is_coordinated=False)
+    coordinated_timeline = simulate_spread(G, is_coordinated=True)
+
+    # Step 4: Classify the coordinated timeline
+    propagation_result = classify_propagation_pattern(coordinated_timeline)
+
+    # Step 5: Patient Zero = earliest activated node in organic timeline
+    patient_zero_id = min(organic_timeline, key=lambda x: x[1])[0]
+    G.nodes[patient_zero_id]['content_hash'] = content_data['content_hash']
 
     return {
-        "nlp": nlp_result,
-        "graph": graph_data
+        'content_hash':   content_data['content_hash'],
+        'patient_zero':   patient_zero_id,
+        'infection_prob': content_data['infection_prob'],
+        'propagation':    propagation_result,
+        'graph':          serialize_graph(G, SUPERSPREADER_ID)
     }
-
-
-# -------- Propagation Classification --------
-
-@app.post("/classify-propagation")
-async def classify_propagation(req: PropagationTimelineRequest):
-    """
-    Classify a propagation timeline as either organic or coordinated.
-    
-    Input: timeline as list of [node_id, step] pairs
-    Output: verdict (organic/coordinated), confidence, and extracted features
-    """
-    result = classify_propagation_pattern(req.timeline)
-    return result
-
 
 # -------- Graph Visualization --------
 
