@@ -1,111 +1,116 @@
-# AegisShield Model Setup
+# AegisShield Setup Guide
 
-This guide explains how to set up and run the AI model pipeline end-to-end.
+This guide provides a clean setup for local development (backend + frontend).
 
-## 1. Prerequisites
+## Prerequisites
 
 - Python 3.10+
-- pip
-- Optional: virtual environment tool (`venv`)
+- Node.js 18+
+- npm
+- Git
 
-## 2. Project Structure (AI-relevant)
+Optional for OCR-heavy usage:
 
-- `data/datasets/`: raw dataset files
-- `data/processed/`: generated processed files
-- `backend/models/`: trained model artifacts (`.pkl`)
-- `backend/scripts/`: preprocessing, training, and prediction scripts
-- `backend/ocr/`: OCR module
+- GPU-compatible PyTorch stack (if you want acceleration)
 
-## 3. Create and Activate Virtual Environment
+## 1. Clone And Enter Repo
 
-From repository root:
+```bash
+git clone <your-repo-url>
+cd AegisShield
+```
+
+## 2. Backend Setup
+
+### Windows (PowerShell)
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-## 4. Install Dependencies
-
-It is recommended to install all Python dependencies from the repository `requirements.txt` so the environment matches the project.
-
-From repository root (inside the activated virtual environment):
-
-```powershell
 pip install -r requirements.txt
+python -m uvicorn backend.main:app --reload
 ```
 
-Notes:
-- `requirements.txt` includes `torch` and `torchvision` which EasyOCR requires; if you need a specific CUDA build, install the matching `torch`/`torchvision` from the official PyTorch instructions before installing the rest of the requirements.
-- On Windows you may need to run PowerShell as Administrator when installing some binary packages.
+### Linux/macOS
 
-## 5. Download/Place Datasets
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m uvicorn backend.main:app --reload
+```
 
-Put the following files into `data/datasets/`:
+Backend base URL: `http://localhost:8000`
 
-- `Fake.csv`
-- `True.csv`
-- `train.tsv`
-- `valid.tsv`
-- `test.tsv`
+## 3. Frontend Setup
 
-Sources and credits: see `data/README.md`.
+In a new terminal:
 
-## 6. Run Data Processing Pipeline
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-From repository root, run:
+Frontend URL: `http://localhost:5173`
+
+To point frontend at a different backend URL:
+
+### Windows (PowerShell)
 
 ```powershell
-python backend/scripts/process_news_dataset.py
-python backend/scripts/process_liar_dataset.py
-python backend/scripts/combine_datasets.py
+$env:VITE_API_URL="http://localhost:8000"
+npm run dev
 ```
 
-This generates:
+### Linux/macOS
 
-- `data/processed/news_processed.csv`
-- `data/processed/liar_processed.csv`
-- `data/processed/combined_dataset.csv`
-
-## 7. Train the Model
-
-```powershell
-python backend/scripts/train_model.py
+```bash
+export VITE_API_URL="http://localhost:8000"
+npm run dev
 ```
 
-This generates model artifacts in `backend/models/`:
+## 4. Verify Setup
 
-- `misinformation_model.pkl`
-- `tfidf_vectorizer.pkl`
+Backend health:
 
-## 8. Run Prediction Test
-
-```powershell
-python backend/scripts/predict.py
+```bash
+curl http://localhost:8000/health
 ```
 
-## 9. OCR + Detection Test (Optional)
+or run the script:
 
-Use sample image in `data/samples/sample_image.png`:
-
-```powershell
-python backend/scripts/detect_from_image.py
+```bash
+python backend/scripts/health_check.py
 ```
 
-## 10. Run Backend API (Optional)
+## 5. Optional: Build Frontend
 
-Install API dependencies if needed:
-
-```powershell
-pip install fastapi uvicorn python-multipart
+```bash
+cd frontend
+npm run build
 ```
 
-Start API:
+## 6. Dataset Notes
 
-```powershell
-uvicorn backend.main:app --reload
-```
+Raw and processed datasets live in `data/`.
 
-Health check:
+- `data/datasets/` raw sources
+- `data/processed/` prepared outputs
 
-- `GET http://127.0.0.1:8001/health`
+Source links and attribution are documented in [data/README.md](data/README.md).
+
+## 7. Common Issues
+
+- `ModuleNotFoundError` in backend:
+	activate `.venv` and reinstall `requirements.txt`.
+- CORS error in browser:
+	usually backend threw a 500; check backend terminal logs.
+- OCR import/runtime issues:
+	verify `torch`, `torchvision`, and `easyocr` install correctly for your platform.
+
+## 8. Developer Shortcuts
+
+- Backend API docs: `http://localhost:8000/docs`
+- Frontend lint: `cd frontend && npm run lint`
+- Frontend preview build: `cd frontend && npm run preview`

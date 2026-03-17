@@ -5,7 +5,6 @@ from typing import Optional, List
 import shutil
 import uuid
 import os
-import hashlib
 from datetime import datetime, timezone
 
 # OCR
@@ -23,7 +22,6 @@ from backend.graph.engine import (
 from backend.graph.content_ingestor import ingest_content
 
 # Propagation classifier
-from backend.propagation_classifier.prop_classifier import classify_propagation_pattern
 from backend.propagation_classifier.prop_classifier import classify_propagation_pattern
 
 app = FastAPI(title="AegisShield API")
@@ -43,6 +41,10 @@ class AnalyzeRequest(BaseModel):
     propagation_metadata: Optional[dict] = None
 
 
+class ClassifyRequest(BaseModel):
+    text: Optional[str] = None
+
+
 class AuditLogEntry(BaseModel):
     timestamp: str
     signature_id: str
@@ -56,15 +58,6 @@ class PropagationTimelineRequest(BaseModel):
     timeline: list  # [(node_id, step), ...]
     infection_prob: float = 0.25
 
-
-# -------- Static Fallback Data --------
-
-STATIC_NLP = {
-    "label": "fake",
-    "fake_probability": 0.91,
-    "true_probability": 0.09,
-    "confidence": "high"
-}
 
 # -------- In-Memory Stores --------
 audit_log_store: List[dict] = []
@@ -82,6 +75,36 @@ federation_store: dict = {
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "1.0.0"}
+
+
+@app.post("/classify")
+async def classify(req: ClassifyRequest):
+    """Lightweight deterministic text classification for health checks and quick previews."""
+    text = req.text
+    if not text:
+        return {"error": "no text provided"}
+
+    exclamation_count = text.count('!')
+    caps_ratio = sum(1 for c in text if c.isupper()) / max(len(text), 1)
+
+    fake_probability = min(0.95, max(0.05, 0.35 + (exclamation_count * 0.03) + (caps_ratio * 0.4)))
+    true_probability = 1.0 - fake_probability
+    label = 'fake' if fake_probability >= 0.5 else 'true'
+
+    distance = abs(fake_probability - 0.5)
+    if distance >= 0.3:
+        confidence = 'high'
+    elif distance >= 0.15:
+        confidence = 'medium'
+    else:
+        confidence = 'low'
+
+    return {
+        'label': label,
+        'fake_probability': round(fake_probability, 4),
+        'true_probability': round(true_probability, 4),
+        'confidence': confidence,
+    }
 
 
 # -------- OCR Endpoint --------
