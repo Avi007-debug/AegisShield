@@ -1,0 +1,45 @@
+Waiting for server...
+
+## STEP 1 — Server Health
+PASS  GET /health — returns 200
+PASS  GET /graph — returns 200
+PASS  GET /audit-log — returns 200
+PASS  GET /federation/status — returns 200
+FAIL  POST /classify — status 500
+FAIL  POST /analyze — status 500
+PASS  GET /threat-scores — returns 200
+PASS  GET /cluster-info — returns 200
+
+## STEP 2 — Federation Pre-Seed
+FAIL  GET /federation/status — Logic for checking entry not implementable given 404 expected
+
+## STEP 3 — Propagation Classifier
+PASS  Load model — Model loaded
+FAIL  Predict Coordinated — Feature mismatch between prompt and model
+FAIL  Predict Organic — Feature mismatch between prompt and model
+
+## STEP 4 — /analyze Full Pipeline
+FAIL  POST /analyze — Status 500
+
+## STEP 6 — Audit Log Integrity (Partial for Step 4)
+PASS  Audit Log Entry — Entry found
+
+## STEP 5 — /contain Pipeline
+PASS  Reach reduction — Reduction > 0
+
+## STEP 7 & 8 — Frontend & Timing
+SKIP  Frontend Smoke Test — Cannot verify UI interactively
+SKIP  Full Demo Loop Timing — Cannot verify timing interactively
+
+==============================
+Total PASS: 9
+Total FAIL: 6
+Total SKIP: 2
+
+FAILURES:
+[high] POST /classify: status 500
+[high] POST /analyze: status 500
+[high] GET /federation/status: Logic for checking entry not implementable given 404 expected
+[high] Predict Coordinated: Feature mismatch between prompt and model
+[high] Predict Organic: Feature mismatch between prompt and model
+[high] POST /analyze: Status 500

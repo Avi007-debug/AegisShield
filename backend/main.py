@@ -7,9 +7,8 @@ import uuid
 import os
 from datetime import datetime, timezone
 
-# NLP + OCR
-from backend.nlp.classifier import predict
-from backend.ocr.ocr_module import extract_text  # TODO: Re-enable after easyocr is installed
+# OCR
+from backend.ocr.ocr_module import extract_text
 
 # Graph engine
 from backend.graph.engine import (
@@ -18,8 +17,9 @@ from backend.graph.engine import (
     SUPERSPREADER_ID,
     simulate_containment,
     serialize_graph,
-    simulate_spread
+    simulate_spread, 
 )
+from backend.graph.content_ingestor import ingest_content
 
 # Propagation classifier
 from backend.propagation_classifier.prop_classifier import classify_propagation_pattern
@@ -34,10 +34,6 @@ app.add_middleware(
 )
 
 # -------- Request Models --------
-
-class ClassifyRequest(BaseModel):
-    text: str
-
 
 class AnalyzeRequest(BaseModel):
     text: Optional[str] = None
@@ -78,16 +74,7 @@ async def health():
     return {"status": "ok", "version": "1.0.0"}
 
 
-# -------- NLP Classification --------
-
-@app.post("/classify")
-async def classify_endpoint(req: ClassifyRequest):
-
-    result = predict(req.text)
-
-    return result
-
-
+# -------- OCR Endpoint --------
 
 # -------- OCR Endpoint --------
 @app.post("/extract-text")
@@ -104,64 +91,35 @@ async def extract_text_endpoint(file: UploadFile):
 
 @app.post("/analyze")
 async def analyze(req: AnalyzeRequest):
-    """Composite threat analysis combining NLP and propagation signals."""
-    
-    # Get NLP classification
-    if req.text:
-        nlp_result = predict(req.text)
-    else:
-        nlp_result = STATIC_NLP
-    
-    # Extract NLP confidence score (fake_probability)
-    nlp_score = round(nlp_result.get("fake_probability", 0.5), 4)
-    
-    # Get propagation score (stub at 0.5 for now, will use real classifier after Phase 2)
-    if req.propagation_metadata:
-        # TODO: Call PropagationClassifier.predict(req.propagation_metadata) here
-        # For now, stub at 0.5
-        prop_score = 0.5
-    else:
-        prop_score = 0.5
-    prop_score = round(prop_score, 4)
-    
-    # Compute composite threat: 35% NLP + 65% Propagation
-    composite_threat = round(0.35 * nlp_score + 0.65 * prop_score, 4)
-    
-    # Generate verdict
-    verdict = "COORDINATED" if composite_threat > 0.6 else "ORGANIC"
-    
-    # Generate unique IDs
-    regulatory_order_id = f"REG-2026-{uuid.uuid4().hex[:6].upper()}"
-    signature_id = f"SIG-{uuid.uuid4().hex[:8].upper()}"
-    
-    # Get graph data
-    graph_data = serialize_graph(G, SUPERSPREADER_ID)
-    
+    text = req.text
+    if not text:
+        return {"error": "no text provided"}
+
+    # Step 1: Ingest content → fingerprint + infection probability
+    content_data = ingest_content(text)
+
+    # Step 2: Attach to Node 0
+    G.nodes[0]['content_hash']   = content_data['content_hash']
+    G.nodes[0]['infection_prob'] = content_data['infection_prob']
+
+    # Step 3: Run both regimes using the unified simulate_spread
+    organic_timeline     = simulate_spread(G, is_coordinated=False)
+    coordinated_timeline = simulate_spread(G, is_coordinated=True)
+
+    # Step 4: Classify the coordinated timeline
+    propagation_result = classify_propagation_pattern(coordinated_timeline)
+
+    # Step 5: Patient Zero = earliest activated node in organic timeline
+    patient_zero_id = min(organic_timeline, key=lambda x: x[1])[0]
+    G.nodes[patient_zero_id]['content_hash'] = content_data['content_hash']
+
     return {
-        "nlp_score": nlp_score,
-        "prop_score": prop_score,
-        "composite_threat": composite_threat,
-        "verdict": verdict,
-        "regulatory_order_id": regulatory_order_id,
-        "signature_id": signature_id,
-        "nlp_details": nlp_result,
-        "graph": graph_data
+        'content_hash':   content_data['content_hash'],
+        'patient_zero':   patient_zero_id,
+        'infection_prob': content_data['infection_prob'],
+        'propagation':    propagation_result,
+        'graph':          serialize_graph(G, SUPERSPREADER_ID)
     }
-
-
-# -------- Propagation Classification --------
-
-@app.post("/classify-propagation")
-async def classify_propagation(req: PropagationTimelineRequest):
-    """
-    Classify a propagation timeline as either organic or coordinated.
-    
-    Input: timeline as list of [node_id, step] pairs
-    Output: verdict (organic/coordinated), confidence, and extracted features
-    """
-    result = classify_propagation_pattern(req.timeline)
-    return result
-
 
 # -------- Graph Visualization --------
 
