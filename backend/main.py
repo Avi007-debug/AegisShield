@@ -16,8 +16,12 @@ from backend.graph.engine import (
     SCORES,
     SUPERSPREADER_ID,
     simulate_containment,
-    serialize_graph
+    serialize_graph,
+    simulate_spread
 )
+
+# Propagation classifier
+from backend.propagation_classifier.prop_classifier import classify_propagation_pattern
 
 app = FastAPI(title="AegisShield API")
 
@@ -37,6 +41,10 @@ class ClassifyRequest(BaseModel):
 class AnalyzeRequest(BaseModel):
     text: Optional[str] = None
     use_cached_graph: bool = True
+
+
+class PropagationTimelineRequest(BaseModel):
+    timeline: list  # [(node_id, step), ...]
 
 
 # -------- Static Fallback Data --------
@@ -99,6 +107,20 @@ async def analyze(req: AnalyzeRequest):
         "nlp": nlp_result,
         "graph": graph_data
     }
+
+
+# -------- Propagation Classification --------
+
+@app.post("/classify-propagation")
+async def classify_propagation(req: PropagationTimelineRequest):
+    """
+    Classify a propagation timeline as either organic or coordinated.
+    
+    Input: timeline as list of [node_id, step] pairs
+    Output: verdict (organic/coordinated), confidence, and extracted features
+    """
+    result = classify_propagation_pattern(req.timeline)
+    return result
 
 
 # -------- Graph Visualization --------
@@ -189,3 +211,22 @@ async def audit_log():
             }
         ]
     }
+
+@app.get("/debug/training-stats")
+async def training_stats():
+    """Show sample features from training data"""
+    from backend.graph.engine import simulate_spread, extract_features, G
+    
+    samples = {
+        'organic': [],
+        'coordinated': []
+    }
+    
+    for i in range(5):
+        org_timeline = simulate_spread(G, is_coordinated=False, seed=i)
+        coord_timeline = simulate_spread(G, is_coordinated=True, seed=i + 500)
+        
+        samples['organic'].append(extract_features(org_timeline))
+        samples['coordinated'].append(extract_features(coord_timeline))
+    
+    return samples

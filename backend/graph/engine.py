@@ -1,5 +1,8 @@
 import networkx as nx
 import numpy as np
+import random
+import pandas as pd
+from collections import Counter
 
 # ── Graph Construction ─────────────────────────────────────────────────────────
 
@@ -136,8 +139,139 @@ def serialize_graph(DG, ss_id) -> dict:
         'edge_count':       len(edges)
     }
 
+# ── Simulation functions ──────────────────────────────────────────────────── 
+def simulate_spread(DG, is_coordinated=False, steps=15, seed=None):
+    """
+    Improved spread simulation with clear organic vs coordinated distinction.
+    """
+    if seed: random.seed(seed)
+    
+    # Key difference: infection probability gap
+    if is_coordinated:
+        infection_prob = random.uniform(0.40, 0.60)  # Aggressive spread
+        # 10-20 nodes pre-activated (strong bot signal)
+        preseed_count = random.randint(10, 20)
+        preseed_nodes = random.sample(list(DG.nodes())[1:], k=preseed_count)
+    else:
+        infection_prob = random.uniform(0.25, 0.35)  # Medium spread (increased from 16-28%)
+        preseed_nodes = []
+    
+    infected = {0} | set(preseed_nodes)
+    timeline = [(node, 0) for node in infected]
+    
+    for step in range(1, steps + 1):
+        newly_infected = set()
+        for node in infected:
+            for neighbour in DG.successors(node):
+                if neighbour not in infected:
+                    if random.random() < infection_prob:
+                        newly_infected.add(neighbour)
+                        timeline.append((neighbour, step))
+        
+        infected |= newly_infected
+        if not newly_infected:
+            break
+    
+    # Observe 60-80% of nodes (more complete data)
+    observability = random.uniform(0.6, 0.8)
+    observed = [(n, s) for n, s in timeline if random.random() < observability]
+    
+    return observed if observed else [(0, 0)]
+
+def extract_features(timeline: list) -> dict:
+    if not timeline:
+        return {
+            'velocity_ratio': 0,
+            'simultaneous_activation_count': 0,
+            'activation_variance': 0,
+            'depth_width_ratio': 0,
+            'gini_coefficient': 0,      # new
+            'cascade_depth': 0          # new
+        }
+    
+    from collections import Counter
+    steps = [t[1] for t in timeline]
+    total = len(timeline)
+    step_counts = Counter(steps)
+    
+    # ── Bot Detection proxy ───────────────────────────────────────────
+    # Simultaneous activation: how many nodes fired at the earliest step?
+    # Real bots activate in tight time windows — this is the core bot signal
+    min_step = min(steps)
+    simultaneous_activation_count = step_counts[min_step]
+    
+    # ── Anomaly Detection: velocity ───────────────────────────────────
+    # What fraction of total spread happened in the first 20% of steps?
+    max_step = max(steps) if steps else 1
+    early_cutoff = max(1, int(max_step * 0.2))
+    early_activations = sum(v for k, v in step_counts.items() if k <= early_cutoff)
+    velocity_ratio = early_activations / max(total, 1)
+    
+    # ── Anomaly Detection: temporal variance ──────────────────────────
+    # Low variance = burst pattern (coordinated)
+    # High variance = slow trickle (organic)
+    activation_variance = float(np.var(steps)) if len(steps) > 1 else 0
+    
+    # ── Network Threat Intelligence: cascade shape ────────────────────
+    # depth_width_ratio: max nodes in any single step / total unique steps
+    # Coordinated = wide bursts. Organic = narrow consistent steps
+    max_step_count = max(step_counts.values())
+    depth_width_ratio = max_step_count / max(len(step_counts), 1)
+    
+    # ── Network Threat Intelligence: Gini coefficient ─────────────────
+    # Measures inequality of activation distribution across steps
+    # High Gini = one step dominates (coordinated burst)
+    # Low Gini = even spread across steps (organic)
+    counts = sorted(step_counts.values())
+    n = len(counts)
+    if n > 1:
+        cumulative = np.cumsum(counts)
+        gini = (2 * np.sum((i + 1) * counts[i] for i in range(n)) 
+                / (n * np.sum(counts)) - (n + 1) / n)
+        gini = round(float(abs(gini)), 4)
+    else:
+        gini = 0.0
+    
+    # ── Bot Detection: cascade depth ─────────────────────────────────
+    # How many propagation steps total?
+    # Coordinated campaigns are wide but shallow (bots don't chain)
+    # Organic virality is deep (person tells person tells person)
+    cascade_depth = max_step - min_step if steps else 0
+    
+    return {
+        'velocity_ratio':               round(velocity_ratio, 4),
+        'simultaneous_activation_count': simultaneous_activation_count,
+        'activation_variance':           round(activation_variance, 4),
+        'depth_width_ratio':             round(depth_width_ratio, 4),
+        'gini_coefficient':              gini,
+        'cascade_depth':                 cascade_depth
+    }
+
+# ── Generate synthetic Training data  ──────────────────────────
+
+def generate_training_data(n_samples=500) -> pd.DataFrame:
+    rows = []
+    
+    for i in range(n_samples):
+        # ~5% of labels are flipped (realistic label noise from annotation errors)
+        is_mislabeled = random.random() < 0.05
+        
+        # Organic sample
+        timeline = simulate_spread(G, is_coordinated=False, seed=i)
+        features = extract_features(timeline)
+        features['label'] = 1 if is_mislabeled else 0  # flipped if mislabeled
+        rows.append(features)
+        
+        # Coordinated sample
+        timeline = simulate_spread(G, is_coordinated=True, seed=i + 500)
+        features = extract_features(timeline)
+        features['label'] = 0 if is_mislabeled else 1  # flipped if mislabeled
+        rows.append(features)
+    
+    return pd.DataFrame(rows)
 
 # ── Module-Level Globals (built once at import time) ──────────────────────────
 
-G                        = build_graph()
+G = build_graph()
 SCORES, SUPERSPREADER_ID = compute_threat_scores(G)
+
