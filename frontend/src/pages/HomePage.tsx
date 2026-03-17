@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, type ReactNode, type RefObject } from 'r
 import { Link } from 'react-router-dom'
 import {
   Search, Network, BarChart3, AlertTriangle, ScrollText,
-  ArrowRight, Zap, Globe, Lock, TrendingUp,
+  ArrowRight, Zap, Globe, Lock, TrendingUp, Radar, ShieldCheck, Activity, Sparkles,
 } from 'lucide-react'
 import { useTypewriter } from '@/hooks/useTypewriter'
 import { useCountUp } from '@/hooks/useCountUp'
@@ -53,6 +53,36 @@ const steps = [
   {
     step: '03', icon: LogoMark, accent: 'text-safe', title: 'Contain & Report',
     desc: 'Execute surgical graph-edge removal on threat nodes. Full audit trail generated automatically.',
+  },
+]
+
+const liveSignals = [
+  {
+    title: 'Realtime Threat Pulse',
+    value: '92.4',
+    unit: 'Trust Score',
+    trend: '+4.2%',
+    icon: Activity,
+    color: 'text-primary',
+    glow: 'shadow-primary/20',
+  },
+  {
+    title: 'Cross-Platform Reach',
+    value: '1.8M',
+    unit: 'Nodes / day',
+    trend: 'Live',
+    icon: Globe,
+    color: 'text-info',
+    glow: 'shadow-info/20',
+  },
+  {
+    title: 'Containment Effect',
+    value: '73%',
+    unit: 'Spread Reduced',
+    trend: '+11%',
+    icon: ShieldCheck,
+    color: 'text-safe',
+    glow: 'shadow-safe/20',
   },
 ]
 
@@ -127,8 +157,8 @@ export function HomePage() {
             backgroundSize: '72px 72px',
           }}
         />
-        <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 h-[700px] w-[900px] rounded-full bg-primary/6 blur-[140px]" />
-        <div className="pointer-events-none absolute -bottom-20 left-1/4 h-[400px] w-[500px] rounded-full bg-info/4 blur-[120px]" />
+        <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 h-[700px] w-[900px] rounded-full bg-primary/12 blur-[140px]" />
+        <div className="pointer-events-none absolute -bottom-20 left-1/4 h-[400px] w-[500px] rounded-full bg-info/8 blur-[120px]" />
         {/* Floating accent orbs */}
         <div className="pointer-events-none absolute right-[10%] top-[20%] h-2 w-2 rounded-full bg-primary/40"
           style={{ animation: 'particle-drift 6s ease-in-out infinite' }} />
@@ -186,6 +216,15 @@ export function HomePage() {
                 View Network
               </Link>
             </div>
+
+            <RevealOnScroll delay={140} distance={16}>
+              <div className="mx-auto mt-10 flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-background/35 px-4 py-2 backdrop-blur-sm">
+                <Radar className="h-3.5 w-3.5 text-primary animate-pulse" />
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-foreground/70">
+                  Live Monitoring Across 50+ High-Risk Nodes
+                </span>
+              </div>
+            </RevealOnScroll>
           </div>
         </div>
       </section>
@@ -261,6 +300,46 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* ── Live Operations Strip ─────────────────────────────────── */}
+      <section className="border-y border-border bg-gradient-to-b from-background/20 to-card/25 px-6 py-20 md:py-24">
+        <div className="mx-auto max-w-7xl">
+          <RevealOnScroll className="mb-10 text-center">
+            <p className="mb-3 font-mono text-xs font-semibold uppercase tracking-widest text-info">Realtime Command Surface</p>
+            <h2 className="font-display text-3xl font-bold tracking-tight text-foreground md:text-4xl">Live Operations Pulse</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground">
+              Persistent telemetry cards show trust movement, network pressure, and containment performance as incidents unfold.
+            </p>
+          </RevealOnScroll>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {liveSignals.map((signal, i) => (
+              <RevealOnScroll key={signal.title} delay={i * 90} direction={i % 2 ? 'right' : 'up'} distance={20}>
+                <div className={`relative overflow-hidden rounded-2xl border border-border bg-card/70 p-6 shadow-2xl ${signal.glow}`}>
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-info/5" />
+                  <div className="relative">
+                    <div className="mb-5 flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background/80 ring-1 ring-border">
+                        <signal.icon className={`h-5 w-5 ${signal.color}`} />
+                      </div>
+                      <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+                      <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {signal.trend}
+                      </span>
+                    </div>
+                    <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">{signal.title}</p>
+                    <p className="font-display text-4xl font-bold leading-none text-foreground">{signal.value}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{signal.unit}</p>
+                    <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-background/70 ring-1 ring-border">
+                      <div className="h-full rounded-full bg-gradient-to-r from-primary via-info to-safe animate-signal-flow" style={{ width: `${65 + i * 12}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </RevealOnScroll>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── How It Works ──────────────────────────────────────────── */}
       <section className="border-t border-border bg-gradient-to-b from-card/30 to-transparent px-6 py-24 md:py-32">
         <div className="mx-auto max-w-7xl">
@@ -298,6 +377,9 @@ export function HomePage() {
         <RevealOnScroll>
           <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card via-card to-card/50 p-12 text-center md:p-20">
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/6 via-transparent to-info/4" />
+            <div className="pointer-events-none absolute left-8 top-8 opacity-35">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
             <div className="pointer-events-none absolute left-1/2 top-0 h-60 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/12 blur-3xl" />
             <div
               className="absolute inset-0 bg-hex-grid opacity-[0.025]"
