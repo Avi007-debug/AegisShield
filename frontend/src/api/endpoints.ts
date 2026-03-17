@@ -1,0 +1,31 @@
+import { api } from './client'
+import type {
+  AnalyzeRequest,
+  AnalyzeResult,
+  GraphData,
+  ThreatScoresResponse,
+  ClusterInfoResponse,
+  AuditLogResponse,
+  ContainmentResult,
+} from '@/types'
+
+export const endpoints = {
+  health: () => api.get<{ status: string; version: string }>('/health'),
+
+  analyze: (data: AnalyzeRequest) =>
+    api.post<AnalyzeResult>('/analyze', data).then((r) => r.data),
+
+  getGraph: () => api.get<GraphData>('/graph').then((r) => r.data),
+
+  contain: (nodeId: number) =>
+    api.post<ContainmentResult>(`/contain/${nodeId}`).then((r) => r.data),
+
+  getThreatScores: () =>
+    api.get<ThreatScoresResponse>('/threat-scores').then((r) => r.data),
+
+  getClusterInfo: () =>
+    api.get<ClusterInfoResponse>('/cluster-info').then((r) => r.data),
+
+  getAuditLog: () =>
+    api.get<AuditLogResponse>('/audit-log').then((r) => r.data),
+}
