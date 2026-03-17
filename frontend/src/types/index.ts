@@ -1,13 +1,9 @@
-// ============ Classification Types ============
-export interface ClassifyRequest {
-  text: string
-}
-
-export interface ClassifyResult {
-  label: string
-  fake_probability: number
-  true_probability: number
-  confidence: string
+// ============ Propagation Types ============
+export interface PropagationResult {
+  verdict: 'organic' | 'coordinated'
+  confidence: number
+  coordination_prob: number
+  features: Record<string, number>
 }
 
 // ============ Analyze Types ============
@@ -17,7 +13,10 @@ export interface AnalyzeRequest {
 }
 
 export interface AnalyzeResult {
-  nlp: ClassifyResult
+  content_hash: string
+  patient_zero: number
+  infection_prob: number
+  propagation: PropagationResult
   graph: GraphData
 }
 
@@ -90,14 +89,10 @@ export interface AuditLogResponse {
 
 // ============ Containment Types ============
 export interface ContainmentResult {
-  contained_node: number
-  edges_removed: number
+  node_id: number
   reach_before: number
   reach_after: number
-  reduction_pct: number
-}
-
-// ============ OCR Types ============
-export interface ExtractTextResult {
-  extracted_text: string
+  reach_reduction_pct: number
+  cut_edges: Array<[number, number]>
+  bridge_bc_scores: Array<[Array<number>, number]>
 }

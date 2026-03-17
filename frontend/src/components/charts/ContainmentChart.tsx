@@ -6,16 +6,18 @@ import {
   BarElement,
   Tooltip,
 } from 'chart.js'
+import { useContainmentResult } from '@/hooks/useApi'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
 
-interface Props {
-  reachBefore?: number
-  reachAfter?: number
-  reductionPct?: number
-}
+export function ContainmentChart() {
+  const { data } = useContainmentResult()
 
-export function ContainmentChart({ reachBefore = 48, reachAfter = 12, reductionPct = 75 }: Props) {
+  // Use live data if available, otherwise show defaults
+  const reachBefore = data?.reach_before ?? 48
+  const reachAfter = data?.reach_after ?? 12
+  const reductionPct = data?.reach_reduction_pct ?? 75
+
   const chartData = {
     labels: ['Before', 'After'],
     datasets: [

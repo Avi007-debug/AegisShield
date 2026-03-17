@@ -1,0 +1,85 @@
+INFO:     Started server process [30833]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58182 - "GET /audit-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58191 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58192 - "GET /graph HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58193 - "GET /audit-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58194 - "GET /federation/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58195 - "POST /classify HTTP/1.1" 404 Not Found
+
+=== TEST TIMELINE ===
+Input: [(5, 0), (8, 0), (11, 0), (12, 0), (14, 0), (15, 0), (16, 0), (17, 0), (21, 0), (27, 0), (28, 0), (33, 0), (36, 0), (38, 0), (41, 0), (47, 0), (49, 0), (6, 1), (30, 1), (31, 1), (42, 1), (18, 1), (18, 1), (23, 1), (10, 2), (9, 2), (32, 2), (34, 2), (34, 2), (35, 2), (40, 2), (37, 2), (13, 3), (26, 3), (7, 3), (43, 3), (44, 4), (46, 4), (48, 4), (45, 5), (45, 5), (29, 5)]
+Extracted features: {'velocity_ratio': 0.5714, 'simultaneous_activation_count': 17, 'activation_variance': 2.5351, 'depth_width_ratio': 2.8333, 'gini_coefficient': 0.3492, 'cascade_depth': 5}
+Prediction: 1, Coordinated Prob: 0.9237660542193933
+===================
+
+INFO:     127.0.0.1:58196 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58197 - "GET /threat-scores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58198 - "GET /cluster-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58199 - "GET /federation/status HTTP/1.1" 200 OK
+
+=== TEST TIMELINE ===
+Input: [(0, 0), (33, 0), (34, 0), (3, 0), (35, 0), (36, 0), (20, 0), (48, 1), (6, 2), (41, 2), (43, 2), (43, 2), (10, 3), (11, 3), (31, 3), (39, 3), (18, 3), (24, 3), (32, 3), (40, 3), (46, 3), (22, 4), (19, 4), (25, 4), (44, 4), (15, 4), (42, 4), (27, 4), (25, 4), (49, 4), (23, 4), (23, 4), (47, 5)]
+Extracted features: {'velocity_ratio': 0.2424, 'simultaneous_activation_count': 7, 'activation_variance': 2.4261, 'depth_width_ratio': 1.8333, 'gini_coefficient': 0.3889, 'cascade_depth': 5}
+Prediction: 1, Coordinated Prob: 0.9216019777627651
+===================
+
+INFO:     127.0.0.1:58200 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58201 - "GET /audit-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58202 - "POST /contain/0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58210 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58211 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58217 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58218 - "GET /graph HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58219 - "GET /audit-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58220 - "GET /federation/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58221 - "POST /classify HTTP/1.1" 404 Not Found
+
+=== TEST TIMELINE ===
+Input: [(2, 0), (9, 0), (19, 0), (21, 0), (22, 0), (24, 0), (25, 0), (29, 0), (37, 0), (38, 0), (10, 1), (11, 1), (20, 1), (26, 1), (17, 1), (49, 1), (42, 1), (13, 2), (32, 2), (31, 2), (6, 3), (6, 3), (16, 3), (16, 3), (23, 3), (28, 3), (39, 4), (30, 4), (35, 4)]
+Extracted features: {'velocity_ratio': 0.5862, 'simultaneous_activation_count': 10, 'activation_variance': 1.9738, 'depth_width_ratio': 2.0, 'gini_coefficient': 0.2483, 'cascade_depth': 4}
+Prediction: 1, Coordinated Prob: 0.953540206620151
+===================
+
+INFO:     127.0.0.1:58222 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58223 - "GET /threat-scores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58224 - "GET /cluster-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58225 - "GET /federation/status HTTP/1.1" 200 OK
+
+=== TEST TIMELINE ===
+Input: [(0, 0), (35, 0), (38, 0), (40, 0), (11, 0), (12, 0), (46, 0), (48, 0), (26, 0), (9, 1), (14, 1), (41, 1), (49, 1), (23, 2), (23, 2), (27, 2), (37, 2), (10, 3), (19, 3), (25, 3), (13, 3), (15, 3), (24, 3), (43, 3), (30, 4), (8, 4), (45, 4)]
+Extracted features: {'velocity_ratio': 0.4815, 'simultaneous_activation_count': 9, 'activation_variance': 2.0741, 'depth_width_ratio': 1.8, 'gini_coefficient': 0.2222, 'cascade_depth': 4}
+Prediction: 1, Coordinated Prob: 0.9795790285865267
+===================
+
+INFO:     127.0.0.1:58226 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58227 - "GET /audit-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58228 - "POST /contain/0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58354 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58355 - "GET /graph HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58356 - "GET /audit-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58357 - "GET /federation/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58358 - "POST /classify HTTP/1.1" 404 Not Found
+
+=== TEST TIMELINE ===
+Input: [(1, 0), (3, 0), (33, 0), (37, 0), (7, 0), (10, 0), (41, 0), (24, 0), (28, 0), (6, 1), (6, 1), (11, 1), (19, 1), (26, 1), (44, 1), (43, 1), (44, 1), (46, 1), (15, 1), (5, 2), (22, 2), (5, 2), (17, 2), (45, 2), (13, 2), (25, 2), (40, 2), (36, 2), (29, 2), (39, 2), (32, 3), (14, 3), (16, 3), (20, 3), (23, 3), (18, 3), (23, 3), (30, 3), (48, 5), (48, 5)]
+Extracted features: {'velocity_ratio': 0.475, 'simultaneous_activation_count': 9, 'activation_variance': 1.6775, 'depth_width_ratio': 2.2, 'gini_coefficient': 0.2, 'cascade_depth': 5}
+Prediction: 1, Coordinated Prob: 0.9903418488152406
+===================
+
+INFO:     127.0.0.1:58359 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58360 - "GET /threat-scores HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58361 - "GET /cluster-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58362 - "GET /federation/status HTTP/1.1" 200 OK
+
+=== TEST TIMELINE ===
+Input: [(0, 0), (36, 0), (37, 0), (42, 0), (10, 0), (11, 0), (49, 0), (18, 0), (20, 0), (23, 0), (24, 0), (27, 0), (6, 1), (25, 1), (41, 1), (32, 1), (35, 1), (9, 2), (16, 2), (17, 2), (21, 2), (38, 2), (7, 3), (39, 3), (45, 3), (15, 3), (40, 3), (29, 3), (40, 3), (29, 3), (43, 3), (19, 4), (8, 4), (14, 4), (47, 4), (33, 4), (44, 5), (30, 6)]
+Extracted features: {'velocity_ratio': 0.4474, 'simultaneous_activation_count': 12, 'activation_variance': 2.8096, 'depth_width_ratio': 1.7143, 'gini_coefficient': 0.3684, 'cascade_depth': 6}
+Prediction: 1, Coordinated Prob: 0.9913821497449413
+===================
+
+INFO:     127.0.0.1:58363 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58364 - "GET /audit-log HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58365 - "POST /contain/0 HTTP/1.1" 200 OK

@@ -25,6 +25,9 @@ def build_graph(n=50, m=3, seed=42) -> nx.DiGraph:
     cluster_nodes = list(range(20, 35))  # nodes 20-34 = bot cluster
 
     for node in DG.nodes():
+        # Add label for visualization
+        DG.nodes[node]['label'] = str(node)
+        
         if node == 0:
             DG.nodes[node]['type'] = 'patient_zero'
         elif node in cluster_nodes:
@@ -94,27 +97,51 @@ def compute_threat_scores(DG) -> tuple[dict, int]:
 
 def simulate_containment(DG, node_id: int) -> dict:
     """
-    Simulates removal of all outbound edges from node_id.
+    Surgical edge-level containment using betweenness centrality.
+    Identifies the top 5 highest-BC edges connected to node_id and removes them.
     NEVER mutates the global DG — always works on a copy.
     Safe to call repeatedly during the demo.
     """
     reach_before = len(nx.descendants(DG, 0))
-
+    
+    # Compute edge betweenness centrality
+    edge_bc = nx.edge_betweenness_centrality(DG)
+    
+    # Find all edges connected to node_id (both incoming and outgoing in a DiGraph, we focus on outgoing)
+    connected_edges = list(DG.out_edges(node_id))
+    
+    # Sort by betweenness centrality descending
+    if connected_edges:
+        edge_bc_sorted = sorted(
+            [(edge, edge_bc.get(edge, 0)) for edge in connected_edges],
+            key=lambda x: x[1],
+            reverse=True
+        )
+        # Take top 5 edges
+        top_edges = [edge for edge, _ in edge_bc_sorted[:5]]
+        bridge_bc_scores = [(list(edge), round(score, 4)) for edge, score in edge_bc_sorted[:5]]
+    else:
+        top_edges = []
+        bridge_bc_scores = []
+    
+    # Create copy and remove the top edges
     DG_copy = DG.copy()
-    DG_copy.remove_edges_from(list(DG_copy.out_edges(node_id)))
-
-    reach_after  = len(nx.descendants(DG_copy, 0))
-    grayed       = list(nx.descendants(DG, node_id))
-    removed      = len(list(DG.out_edges(node_id)))
-    reduction    = round((reach_before - reach_after) / max(reach_before, 1) * 100, 1)
-
+    DG_copy.remove_edges_from(top_edges)
+    
+    reach_after = len(nx.descendants(DG_copy, 0))
+    
+    # Calculate reach reduction percentage
+    reach_reduction_pct = round(
+        (reach_before - reach_after) / max(reach_before, 1) * 100, 1
+    )
+    
     return {
-        'node_id':       node_id,
-        'reach_before':  reach_before,
-        'reach_after':   reach_after,
-        'reduction_pct': reduction,
-        'removed_edges': removed,
-        'grayed_nodes':  grayed
+        'node_id': node_id,
+        'reach_before': reach_before,
+        'reach_after': reach_after,
+        'reach_reduction_pct': reach_reduction_pct,
+        'cut_edges': [list(edge) for edge in top_edges],
+        'bridge_bc_scores': bridge_bc_scores
     }
 
 

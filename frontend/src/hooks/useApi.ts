@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { endpoints } from '@/api/endpoints'
-import type { ClassifyRequest, AnalyzeRequest } from '@/types'
+import type { AnalyzeRequest } from '@/types'
 
 // --------- Queries ---------
 
@@ -36,18 +36,6 @@ export function useAuditLog() {
 
 // --------- Mutations ---------
 
-export function useClassify() {
-  return useMutation({
-    mutationFn: (data: ClassifyRequest) => endpoints.classify(data),
-  })
-}
-
-export function useExtractText() {
-  return useMutation({
-    mutationFn: (file: File) => endpoints.extractText(file),
-  })
-}
-
 export function useAnalyze() {
   const qc = useQueryClient()
   return useMutation({
@@ -62,10 +50,19 @@ export function useContain() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (nodeId: number) => endpoints.contain(nodeId),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      qc.setQueryData(['containment-result'], result)
       qc.invalidateQueries({ queryKey: ['graph'] })
       qc.invalidateQueries({ queryKey: ['threat-scores'] })
       qc.invalidateQueries({ queryKey: ['audit-log'] })
     },
+  })
+}
+
+export function useContainmentResult() {
+  return useQuery({
+    queryKey: ['containment-result'],
+    queryFn: () => null,
+    enabled: false,
   })
 }
