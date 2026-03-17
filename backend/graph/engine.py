@@ -172,22 +172,22 @@ def simulate_spread(DG, is_coordinated=False, steps=15, seed=None, infection_pro
     Improved spread simulation with clear organic vs coordinated distinction.
     Accepts an optional infection_prob override (e.g. from content NLP).
     """
-    if seed: random.seed(seed)
+    rng = random.Random(seed)
     
     # Key difference: infection probability gap
     if is_coordinated:
         if infection_prob is None:
-            infection_prob = random.uniform(0.40, 0.60)  # Aggressive spread
+            infection_prob = rng.uniform(0.40, 0.60)  # Aggressive spread
         else:
             # Boost the NLP baseline for coordinated bots mapping
             infection_prob = min(0.95, infection_prob * 1.5)
             
         # 10-20 nodes pre-activated (strong bot signal)
-        preseed_count = random.randint(10, 20)
-        preseed_nodes = random.sample(list(DG.nodes())[1:], k=preseed_count)
+        preseed_count = rng.randint(10, 20)
+        preseed_nodes = rng.sample(list(DG.nodes())[1:], k=preseed_count)
     else:
         if infection_prob is None:
-            infection_prob = random.uniform(0.25, 0.35)  # Medium spread (increased from 16-28%)
+            infection_prob = rng.uniform(0.25, 0.35)  # Medium spread (increased from 16-28%)
         
         preseed_nodes = []
     
@@ -199,7 +199,7 @@ def simulate_spread(DG, is_coordinated=False, steps=15, seed=None, infection_pro
         for node in infected:
             for neighbour in DG.successors(node):
                 if neighbour not in infected:
-                    if random.random() < infection_prob:
+                    if rng.random() < infection_prob:
                         newly_infected.add(neighbour)
                         timeline.append((neighbour, step))
         
@@ -208,8 +208,8 @@ def simulate_spread(DG, is_coordinated=False, steps=15, seed=None, infection_pro
             break
     
     # Observe 60-80% of nodes (more complete data)
-    observability = random.uniform(0.6, 0.8)
-    observed = [(n, s) for n, s in timeline if random.random() < observability]
+    observability = rng.uniform(0.6, 0.8)
+    observed = [(n, s) for n, s in timeline if rng.random() < observability]
     
     return observed if observed else [(0, 0)]
 

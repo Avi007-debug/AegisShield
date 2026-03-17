@@ -141,14 +141,25 @@ async def analyze(req: AnalyzeRequest):
 
     # Step 1: Ingest content → fingerprint + infection probability
     content_data = ingest_content(text)
+    base_seed = int(content_data['content_hash'][:8], 16)
 
     # Step 2: Attach to Node 0
     G.nodes[0]['content_hash']   = content_data['content_hash']
     G.nodes[0]['infection_prob'] = content_data['infection_prob']
 
     # Step 3: Run both regimes using the unified simulate_spread
-    organic_timeline     = simulate_spread(G, is_coordinated=False, infection_prob=content_data['infection_prob'])
-    coordinated_timeline = simulate_spread(G, is_coordinated=True, infection_prob=content_data['infection_prob'])
+    organic_timeline = simulate_spread(
+        G,
+        is_coordinated=False,
+        infection_prob=content_data['infection_prob'],
+        seed=base_seed,
+    )
+    coordinated_timeline = simulate_spread(
+        G,
+        is_coordinated=True,
+        infection_prob=content_data['infection_prob'],
+        seed=base_seed + 1,
+    )
 
     # Step 4: Classify the coordinated timeline
     propagation_result = classify_propagation_pattern(coordinated_timeline, infection_prob=content_data['infection_prob'])
