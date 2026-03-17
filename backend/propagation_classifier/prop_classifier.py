@@ -19,8 +19,8 @@ if os.path.exists(MODEL_PATH):
 else:
     prop_clf = None  # Will be trained in __main__
 
-def classify_propagation_pattern(timeline: list) -> dict:
-    features = extract_features(timeline)
+def classify_propagation_pattern(timeline: list, infection_prob: float = 0.25) -> dict:
+    features = extract_features(timeline, infection_prob=infection_prob)
     
     # Debug: print extracted features
     print(f"\n=== TEST TIMELINE ===")
@@ -34,7 +34,8 @@ def classify_propagation_pattern(timeline: list) -> dict:
         'activation_variance': [features['activation_variance']],
         'depth_width_ratio': [features['depth_width_ratio']],
         'gini_coefficient': [features['gini_coefficient']],
-        'cascade_depth': [features['cascade_depth']]
+        'cascade_depth': [features['cascade_depth']],
+        'infection_prob': [features['infection_prob']]
     })
     
     prediction = prop_clf.predict(feature_df)[0]
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     df = generate_training_data(500)
     print(f"Sample features:\n{df.head()}")
     print(f"Feature variance:\n{df.var()}")
-    X = df[['velocity_ratio','simultaneous_activation_count','activation_variance','depth_width_ratio','gini_coefficient','cascade_depth']]
+    X = df[['velocity_ratio','simultaneous_activation_count','activation_variance','depth_width_ratio','gini_coefficient','cascade_depth','infection_prob']]
     y = df['label']
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)

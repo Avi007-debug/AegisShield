@@ -167,20 +167,28 @@ def serialize_graph(DG, ss_id) -> dict:
     }
 
 # ── Simulation functions ──────────────────────────────────────────────────── 
-def simulate_spread(DG, is_coordinated=False, steps=15, seed=None):
+def simulate_spread(DG, is_coordinated=False, steps=15, seed=None, infection_prob=None):
     """
     Improved spread simulation with clear organic vs coordinated distinction.
+    Accepts an optional infection_prob override (e.g. from content NLP).
     """
     if seed: random.seed(seed)
     
     # Key difference: infection probability gap
     if is_coordinated:
-        infection_prob = random.uniform(0.40, 0.60)  # Aggressive spread
+        if infection_prob is None:
+            infection_prob = random.uniform(0.40, 0.60)  # Aggressive spread
+        else:
+            # Boost the NLP baseline for coordinated bots mapping
+            infection_prob = min(0.95, infection_prob * 1.5)
+            
         # 10-20 nodes pre-activated (strong bot signal)
         preseed_count = random.randint(10, 20)
         preseed_nodes = random.sample(list(DG.nodes())[1:], k=preseed_count)
     else:
-        infection_prob = random.uniform(0.25, 0.35)  # Medium spread (increased from 16-28%)
+        if infection_prob is None:
+            infection_prob = random.uniform(0.25, 0.35)  # Medium spread (increased from 16-28%)
+        
         preseed_nodes = []
     
     infected = {0} | set(preseed_nodes)
@@ -205,7 +213,7 @@ def simulate_spread(DG, is_coordinated=False, steps=15, seed=None):
     
     return observed if observed else [(0, 0)]
 
-def extract_features(timeline: list) -> dict:
+def extract_features(timeline: list, infection_prob: float = 0.25) -> dict:
     if not timeline:
         return {
             'velocity_ratio': 0,
@@ -213,7 +221,8 @@ def extract_features(timeline: list) -> dict:
             'activation_variance': 0,
             'depth_width_ratio': 0,
             'gini_coefficient': 0,      # new
-            'cascade_depth': 0          # new
+            'cascade_depth': 0,         # new
+            'infection_prob': infection_prob
         }
     
     from collections import Counter
@@ -271,7 +280,8 @@ def extract_features(timeline: list) -> dict:
         'activation_variance':           round(activation_variance, 4),
         'depth_width_ratio':             round(depth_width_ratio, 4),
         'gini_coefficient':              gini,
-        'cascade_depth':                 cascade_depth
+        'cascade_depth':                 cascade_depth,
+        'infection_prob':                round(float(infection_prob), 4)
     }
 
 # ── Generate synthetic Training data  ──────────────────────────
@@ -284,14 +294,16 @@ def generate_training_data(n_samples=500) -> pd.DataFrame:
         is_mislabeled = random.random() < 0.05
         
         # Organic sample
-        timeline = simulate_spread(G, is_coordinated=False, seed=i)
-        features = extract_features(timeline)
+        ip_org = random.uniform(0.15, 0.35)
+        timeline = simulate_spread(G, is_coordinated=False, seed=i, infection_prob=ip_org)
+        features = extract_features(timeline, infection_prob=ip_org)
         features['label'] = 1 if is_mislabeled else 0  # flipped if mislabeled
         rows.append(features)
         
         # Coordinated sample
-        timeline = simulate_spread(G, is_coordinated=True, seed=i + 500)
-        features = extract_features(timeline)
+        ip_coord = random.uniform(0.40, 0.60)
+        timeline = simulate_spread(G, is_coordinated=True, seed=i + 500, infection_prob=ip_coord)
+        features = extract_features(timeline, infection_prob=ip_coord)
         features['label'] = 0 if is_mislabeled else 1  # flipped if mislabeled
         rows.append(features)
     

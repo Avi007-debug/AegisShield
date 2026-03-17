@@ -54,6 +54,7 @@ class AuditLogEntry(BaseModel):
 
 class PropagationTimelineRequest(BaseModel):
     timeline: list  # [(node_id, step), ...]
+    infection_prob: float = 0.25
 
 
 # -------- Static Fallback Data --------
@@ -146,11 +147,11 @@ async def analyze(req: AnalyzeRequest):
     G.nodes[0]['infection_prob'] = content_data['infection_prob']
 
     # Step 3: Run both regimes using the unified simulate_spread
-    organic_timeline     = simulate_spread(G, is_coordinated=False)
-    coordinated_timeline = simulate_spread(G, is_coordinated=True)
+    organic_timeline     = simulate_spread(G, is_coordinated=False, infection_prob=content_data['infection_prob'])
+    coordinated_timeline = simulate_spread(G, is_coordinated=True, infection_prob=content_data['infection_prob'])
 
     # Step 4: Classify the coordinated timeline
-    propagation_result = classify_propagation_pattern(coordinated_timeline)
+    propagation_result = classify_propagation_pattern(coordinated_timeline, infection_prob=content_data['infection_prob'])
 
     # Step 5: Patient Zero = earliest activated node in organic timeline
     patient_zero_id = min(organic_timeline, key=lambda x: x[1])[0]
