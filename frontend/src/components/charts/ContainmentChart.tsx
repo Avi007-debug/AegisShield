@@ -13,10 +13,20 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
 export function ContainmentChart() {
   const { data } = useContainmentResult()
 
-  // Use live data if available, otherwise show defaults
-  const reachBefore = data?.reach_before ?? 48
-  const reachAfter = data?.reach_after ?? 12
-  const reductionPct = data?.reach_reduction_pct ?? 75
+  if (!data) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center rounded-xl bg-muted/20 border border-dashed border-border/50 p-4 text-center">
+        <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">No containment data</p>
+        <p className="mt-2 text-[10px] text-muted-foreground/60 leading-relaxed">
+          Execute containment on the <span className="text-threat font-semibold">Threats</span> page to see impact analysis.
+        </p>
+      </div>
+    )
+  }
+
+  const reachBefore = data.reach_before
+  const reachAfter = data.reach_after
+  const reductionPct = data.reach_reduction_pct
 
   const chartData = {
     labels: ['Before', 'After'],
@@ -33,7 +43,7 @@ export function ContainmentChart() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
       <Bar
         data={chartData}
         options={{

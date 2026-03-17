@@ -1,8 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { endpoints } from '@/api/endpoints'
-import type { AnalyzeRequest } from '@/types'
+import type { AnalyzeRequest, ContainmentResult } from '@/types'
 
 // --------- Queries ---------
+
+export function useHealth() {
+  return useQuery({
+    queryKey: ['health'],
+    queryFn: endpoints.health,
+    refetchInterval: 10_000,
+  })
+}
 
 export function useGraph() {
   return useQuery({
@@ -50,19 +58,29 @@ export function useContain() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (nodeId: number) => endpoints.contain(nodeId),
-    onSuccess: (result) => {
+    onSuccess: (result, nodeId) => {
+      // Direct cache update for the results panel and charts
       qc.setQueryData(['containment-result'], result)
+
+      // Invalidate related lists
       qc.invalidateQueries({ queryKey: ['graph'] })
       qc.invalidateQueries({ queryKey: ['threat-scores'] })
       qc.invalidateQueries({ queryKey: ['audit-log'] })
+
+      // Update visual tracking for graph nodes
+      const prev = qc.getQueryData<number[]>(['contained-nodes']) ?? []
+      if (!prev.includes(nodeId)) {
+        qc.setQueryData(['contained-nodes'], [...prev, nodeId])
+      }
     },
   })
 }
 
 export function useContainmentResult() {
-  return useQuery({
+  return useQuery<ContainmentResult | null>({
     queryKey: ['containment-result'],
     queryFn: () => null,
-    enabled: false,
+    staleTime: Infinity,
+    gcTime: Infinity,
   })
 }

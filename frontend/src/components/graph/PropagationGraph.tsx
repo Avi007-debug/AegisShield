@@ -1,21 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
 import Cytoscape from 'cytoscape'
-// @ts-ignore
-import COSEBilkent from 'cytoscape-cose-bilkent'
 import { useGraph, useContain } from '@/hooks/useApi'
+import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, Crosshair, Info } from 'lucide-react'
 import { Skeleton } from '@/components/Skeleton'
+import { useState, useEffect, useRef } from 'react'
 import type { GraphNode } from '@/types'
 
-Cytoscape.use(COSEBilkent)
+// Cytoscape.use(COSEBilkent) -- Removed to fix rendering issues
 
 export function PropagationGraph() {
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<Cytoscape.Core | null>(null)
   const { data, isLoading, error } = useGraph()
   const contain = useContain()
+  const qc = useQueryClient()
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
 
+  // Build the Cytoscape instance whenever graph data changes
   useEffect(() => {
     if (!data || !containerRef.current) return
 
@@ -65,6 +66,16 @@ export function PropagationGraph() {
           style: { 'background-color': '#ef4444', 'border-color': '#991b1b', 'border-width': 3, width: 30, height: 30 },
         },
         {
+          // Contained node: grayed out with dashed border — applied after containment
+          selector: 'node.contained',
+          style: {
+            'background-color': '#475569',
+            'border-color': '#94a3b8',
+            'border-style': 'dashed',
+            opacity: 0.45,
+          } as any,
+        },
+        {
           selector: 'edge',
           style: {
             'line-color': '#1e293b',
@@ -81,7 +92,7 @@ export function PropagationGraph() {
         },
       ],
       layout: {
-        name: 'cose-bilkent',
+        name: 'cose',
         animate: true,
         animationDuration: 800,
         randomize: true,
@@ -99,8 +110,34 @@ export function PropagationGraph() {
     })
 
     cyRef.current = cy
+
+    // Re-apply gray-out for any nodes already contained before this render
+    const alreadyContained = qc.getQueryData<number[]>(['contained-nodes']) ?? []
+    alreadyContained.forEach((id) => {
+      cy.$(`#${id}`).addClass('contained')
+    })
+
     return () => { cy.destroy() }
-  }, [data])
+  }, [data]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Whenever the 'contained-nodes' cache updates, apply the class to existing cy instance
+  useEffect(() => {
+    const unsubscribe = qc.getQueryCache().subscribe((event) => {
+      if (
+        event.type === 'updated' &&
+        Array.isArray((event.query.queryKey as string[])) &&
+        (event.query.queryKey as string[])[0] === 'contained-nodes'
+      ) {
+        const ids = qc.getQueryData<number[]>(['contained-nodes']) ?? []
+        const cy = cyRef.current
+        if (!cy) return
+        ids.forEach((id) => {
+          cy.$(`#${id}`).addClass('contained')
+        })
+      }
+    })
+    return unsubscribe
+  }, [qc])
 
   const handleContain = async (nodeId: number) => {
     await contain.mutateAsync(nodeId)
@@ -159,9 +196,13 @@ export function PropagationGraph() {
           { color: '#ef4444', label: 'Superspreader' },
           { color: '#3b82f6', label: 'Normal' },
           { color: '#f97316', label: 'Bot' },
+          { color: '#475569', label: 'Contained', dim: true },
         ].map((l) => (
           <div key={l.label} className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full" style={{ background: l.color }} />
+            <div
+              className="h-2 w-2 rounded-full"
+              style={{ background: l.color, opacity: l.dim ? 0.5 : 1 }}
+            />
             <span className="font-mono text-[10px] text-muted-foreground">{l.label}</span>
           </div>
         ))}
