@@ -2,13 +2,16 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from backend.graph.engine import generate_training_data, extract_features
+# Use centralized path config
+from backend.config import PROPAGATION_MODEL_PATH
 import joblib
 import os
 import pandas as pd
 
 # Define model path relative to this file
-MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
-MODEL_PATH = os.path.join(MODEL_DIR, 'propagation_classifier.pkl')
+# MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
+# MODEL_PATH = os.path.join(MODEL_DIR, 'propagation_classifier.pkl')
+MODEL_PATH = PROPAGATION_MODEL_PATH
 
 # Load model at import time
 if os.path.exists(MODEL_PATH):
@@ -37,16 +40,22 @@ def classify_propagation_pattern(timeline: list) -> dict:
     prediction = prop_clf.predict(feature_df)[0]
     proba = prop_clf.predict_proba(feature_df)[0]
     
-    print(f"Prediction: {prediction}, Probabilities: {proba}")
+    # proba is [prob_organic, prob_coordinated] if classes are [0, 1]
+    # Check classes_ attribute if possible, but assuming standard sklearn behavior for binary 0/1
+    coordination_prob = proba[1]
+    
+    print(f"Prediction: {prediction}, Coordinated Prob: {coordination_prob}")
     print(f"===================\n")
     
     return {
         'verdict': 'coordinated' if prediction == 1 else 'organic',
         'confidence': round(float(max(proba)), 4),
+        'coordination_prob': round(float(coordination_prob), 4),
         'features': features
     }
 if __name__ == "__main__":
     # Create models directory if it doesn't exist
+    MODEL_DIR = os.path.dirname(MODEL_PATH)
     os.makedirs(MODEL_DIR, exist_ok=True)
     
     df = generate_training_data(500)

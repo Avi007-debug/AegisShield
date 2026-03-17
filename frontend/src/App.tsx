@@ -25,7 +25,7 @@ function App() {
   const fetchGraph = async () => {
     setGraphLoading(true)
     try {
-      const response = await fetch('http://localhost:8000/graph')
+      const response = await fetch('http://localhost:8001/graph')
       if (!response.ok) throw new Error(`API error: ${response.status}`)
       const data = await response.json()
       setGraphData(data)
@@ -46,14 +46,24 @@ function App() {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('http://localhost:8000/classify', {
+      const response = await fetch('http://localhost:8001/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: inputText }),
       })
       if (!response.ok) throw new Error(`Request failed: ${response.status}`)
       const data = await response.json()
-      setResult(data)
+      // Transform propagation analysis to classification format
+      setResult({
+        label: data.propagation?.verdict || 'unknown',
+        fake_probability: data.propagation?.coordination_prob || 0,
+        true_probability: 1 - (data.propagation?.coordination_prob || 0),
+        confidence: data.propagation?.confidence || 0
+      })
+      // Update graph with new data from analysis
+      if (data.graph) {
+        setGraphData(data.graph)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -65,7 +75,7 @@ function App() {
     if (!graphData?.superspreader_id) return
     setContainLoading(true)
     try {
-      const response = await fetch(`http://localhost:8000/contain/${graphData.superspreader_id}`, {
+      const response = await fetch(`http://localhost:8001/contain/${graphData.superspreader_id}`, {
         method: 'POST',
       })
       if (!response.ok) throw new Error('Containment failed')
@@ -114,22 +124,31 @@ function App() {
             
             {result && (
               <div className="result-container">
-                <div className={`verdict-header ${result.label}`}>
-                   {result.label.toUpperCase()}
+                <div className={`verdict-badge ${result.label}`}>
+                  VERDICT: {result.label.toUpperCase()}
                 </div>
                 
-                <div className="matrix-grid">
-                  <div className="matrix-cell label">Class</div>
-                  <div className="matrix-cell label">Confidence</div>
-                  
-                  <div className="matrix-cell">Fake</div>
-                  <div className="matrix-cell value">
-                    {(result.fake_probability * 100).toFixed(2)}%
+                <div className="probability-matrix">
+                  <div className="prob-row">
+                    <span className="prob-label">Real</span>
+                    <div className="prob-bar-bg">
+                      <div 
+                        className="prob-bar-fill real" 
+                        style={{width: `${result.true_probability * 100}%`}}
+                      />
+                    </div>
+                    <span className="prob-val">{(result.true_probability * 100).toFixed(1)}%</span>
                   </div>
                   
-                  <div className="matrix-cell">Real</div>
-                  <div className="matrix-cell value">
-                    {(result.true_probability * 100).toFixed(2)}%
+                  <div className="prob-row">
+                    <span className="prob-label">Fake</span>
+                    <div className="prob-bar-bg">
+                      <div 
+                        className="prob-bar-fill fake" 
+                        style={{width: `${result.fake_probability * 100}%`}}
+                      />
+                    </div>
+                    <span className="prob-val">{(result.fake_probability * 100).toFixed(1)}%</span>
                   </div>
                 </div>
               </div>
@@ -154,7 +173,7 @@ function App() {
           </div>
 
           {/* Audit Log Component */}
-          <div style={{ flex: 1, minHeight: 0, marginTop: '1rem' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
              <AuditLog />
           </div>
         </aside>

@@ -16,7 +16,7 @@ export function AuditLog() {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const res = await fetch('http://localhost:8000/audit-log')
+        const res = await fetch('http://localhost:8001/audit-log')
         if (res.ok) {
           const data = await res.json()
           // API returns { log: [...] }, extract array

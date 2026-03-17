@@ -26,12 +26,15 @@ export function NetworkGraph({ data, loading, error }: NetworkGraphProps) {
 
   // Initialize Cytoscape
   useEffect(() => {
-    if (!data || !containerRef.current) return
+    if (!data || !containerRef.current) {
+      console.log('NetworkGraph: Waiting for data or container', { hasData: !!data, hasContainer: !!containerRef.current })
+      return
+    }
 
     // Map node data to Cytoscape format
     const cyNodes = data.nodes.map((node) => ({
       data: { id: String(node.id), label: node.label },
-      classes: node.type,
+      classes: node.type || 'genuine',
     }))
 
     // Map edge data to Cytoscape format
@@ -39,94 +42,102 @@ export function NetworkGraph({ data, loading, error }: NetworkGraphProps) {
       data: { id: edge.id, source: String(edge.source), target: String(edge.target) },
     }))
 
+    console.log('NetworkGraph: Creating cytoscape instance', { nodeCount: cyNodes.length, edgeCount: cyEdges.length })
+
     // Create Cytoscape instance
-    const cy = Cytoscape({
-      container: containerRef.current,
-      elements: [...cyNodes, ...cyEdges],
-      style: [
-        {
-          selector: 'node',
-          style: {
-            'background-color': '#888',
-            label: 'data(label)',
-            'font-size': '10px',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            width: 25,
-            height: 25,
-            'border-width': 2,
-            'border-color': '#333',
-            'color': '#fff',
-            'text-outline-width': 2,
-            'text-outline-color': '#000',
+    try {
+      const cy = Cytoscape({
+        container: containerRef.current,
+        elements: [...cyNodes, ...cyEdges],
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': '#888',
+              label: 'data(label)',
+              'font-size': '10px',
+              'text-valign': 'center',
+              'text-halign': 'center',
+              width: 25,
+              height: 25,
+              'border-width': 2,
+              'border-color': '#333',
+              'color': '#fff',
+              'text-outline-width': 2,
+              'text-outline-color': '#000',
+            },
           },
-        },
-        // Patient Zero - Red
-        {
-          selector: 'node.patient_zero',
-          style: {
-            'background-color': '#ef4444',
-            'border-width': 3,
-            'border-color': '#991b1b',
+          // Patient Zero - Red
+          {
+            selector: 'node.patient_zero',
+            style: {
+              'background-color': '#ef4444',
+              'border-width': 3,
+              'border-color': '#991b1b',
+            },
           },
-        },
-        // Bot nodes - Orange
-        {
-          selector: 'node.bot',
-          style: {
-            'background-color': '#f97316',
-            'border-color': '#ea580c',
+          // Bot nodes - Orange
+          {
+            selector: 'node.bot',
+            style: {
+              'background-color': '#f97316',
+              'border-color': '#ea580c',
+            },
           },
-        },
-        // Genuine - Green (default)
-        {
-          selector: 'node.genuine',
-          style: {
-            'background-color': '#10b981',
-            'border-color': '#047857',
-            'color': '#fff',
+          // Genuine - Green (default)
+          {
+            selector: 'node.genuine',
+            style: {
+              'background-color': '#10b981',
+              'border-color': '#047857',
+              'color': '#fff',
+            },
           },
-        },
-        // Superspreader - Purple
-        {
-          selector: 'node.superspreader',
-          style: {
-            'background-color': '#8b5cf6',
-            'border-width': 3,
-            'border-color': '#6d28d9',
+          // Superspreader - Purple
+          {
+            selector: 'node.superspreader',
+            style: {
+              'background-color': '#8b5cf6',
+              'border-width': 3,
+              'border-color': '#6d28d9',
+            },
           },
-        },
-        // Edge styling
-        {
-          selector: 'edge',
-          style: {
-            'line-color': '#555',
-            'target-arrow-color': '#555',
-            'target-arrow-shape': 'triangle',
-            width: 1,
-            'curve-style': 'bezier',
+          // Edge styling
+          {
+            selector: 'edge',
+            style: {
+              'line-color': '#555',
+              'target-arrow-color': '#555',
+              'target-arrow-shape': 'triangle',
+              width: 1,
+              'curve-style': 'bezier',
+            },
           },
-        },
-      ],
-      layout: {
-        name: 'cose-bilkent',
-        animate: true,
-        animationDuration: 1000,
-        randomize: true,
-        nodeRepulsion: 7500, // Increased for better layout
-        idealEdgeLength: 50,
-        nodeSpacing: 10,
-        fit: true,
-        padding: 30,
-      } as any,
-    })
+        ],
+        layout: {
+          name: 'cose-bilkent',
+          animate: true,
+          animationDuration: 1000,
+          randomize: true,
+          nodeRepulsion: 7500, // Increased for better layout
+          idealEdgeLength: 50,
+          nodeSpacing: 10,
+          fit: true,
+          padding: 30,
+        } as any,
+      })
 
-    cyRef.current = cy
+      cyRef.current = cy
 
-    console.log(`Graph loaded: ${data.node_count} nodes, ${data.edge_count} edges`)
+      console.log(`Graph loaded: ${data.node_count} nodes, ${data.edge_count} edges`)
+      console.log('NetworkGraph: Cytoscape instance created successfully')
 
-    return () => {
-      cy.destroy()
+      return () => {
+        cy.destroy()
+      }
+    } catch (err) {
+      console.error('NetworkGraph: Failed to create cytoscape instance', err)
+      throw err
     }
   }, [data])
 
