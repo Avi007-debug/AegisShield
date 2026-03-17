@@ -28,4 +28,12 @@ export const endpoints = {
 
   getAuditLog: () =>
     api.get<AuditLogResponse>('/audit-log').then((r) => r.data),
+
+  extractText: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<{ extracted_text: string }>('/extract-text', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
 }

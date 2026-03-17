@@ -9,7 +9,7 @@ import hashlib
 from datetime import datetime, timezone
 
 # OCR
-#from backend.ocr.ocr_module import extract_text - uncomment before pushing
+from backend.ocr.ocr_module import extract_text
 
 # Graph engine
 from backend.graph.engine import (
@@ -86,15 +86,14 @@ async def health():
 
 # -------- OCR Endpoint --------
 
-# -------- OCR Endpoint --------
-# @app.post("/extract-text")
-# async def extract_text_endpoint(file: UploadFile):
-#     temp_path = f"temp_{uuid.uuid4()}.png"
-#     with open(temp_path, "wb") as buffer:
-#         shutil.copyfileobj(file.file, buffer)
-#     extracted = extract_text(temp_path)
-#     os.remove(temp_path)
-#     return {"extracted_text": extracted}
+@app.post("/extract-text")
+async def extract_text_endpoint(file: UploadFile):
+    temp_path = f"temp_{uuid.uuid4()}.png"
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    extracted = extract_text(temp_path)
+    os.remove(temp_path)
+    return {"extracted_text": extracted}
 
 
 # -------- Federation Endpoints --------

@@ -16,12 +16,12 @@ const features = [
   {
     icon: Search, num: '01', title: 'Content Analysis', link: '/detection',
     color: 'text-primary', bg: 'bg-primary/10', ring: 'ring-primary/20',
-    description: 'AI-powered classification of misinformation sources using NLP models and OCR pipelines — real-time confidence scoring on any media.',
+    description: 'AI-powered detection of coordinated inorganic activity using NLP models and OCR pipelines — real-time confidence scoring on any content.',
   },
   {
     icon: Network, num: '02', title: 'Propagation Analysis', link: '/analytics',
     color: 'text-info', bg: 'bg-info/10', ring: 'ring-info/20',
-    description: 'Interactive Barabási–Albert network graph visualises how false information cascades across nodes and clusters.',
+    description: 'Interactive Barabási–Albert network graph visualises how content spreads across nodes — pinpointing Patient Zero and superspreader clusters.',
   },
   {
     icon: BarChart3, num: '03', title: 'Threat Intelligence', link: '/threats',
@@ -198,7 +198,7 @@ function SpotlightSurface({
 
 export function HomePage() {
   const { data: graph } = useGraph()
-  const { displayed: typedWord, done: typingDone } = useTypewriter('Misinformation', 72, 650)
+  const { displayed: typedWord, done: typingDone } = useTypewriter('Superspreaders', 72, 650)
   const { ref: statsRef, isVisible: statsVisible } = useIntersection()
 
   const stats = [
@@ -343,7 +343,7 @@ export function HomePage() {
             <p className="mb-3 font-mono text-xs font-semibold uppercase tracking-widest text-primary">Capabilities</p>
             <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-bold tracking-[-0.015em] text-foreground">Platform Overview</h2>
             <p className="mx-auto mt-4 max-w-lg text-sm text-muted-foreground">
-              End-to-end misinformation defense from source tracking through containment.
+              End-to-end superspreader detection — from Patient Zero identification through surgical network containment.
             </p>
           </RevealOnScroll>
 
@@ -469,10 +469,10 @@ export function HomePage() {
                   <AlertTriangle className="h-6 w-6 text-warning" />
                 </div>
                 <h2 className="font-display mb-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-                  Ready to Defend Against Misinformation?
+                  Ready to Detect Superspreaders and Patient Zero?
                 </h2>
                 <p className="mx-auto mb-10 max-w-lg text-sm text-muted-foreground md:text-base">
-                  Analyze suspicious content and map propagation networks in real time.
+                  Trace content back to its origin, surface superspreader nodes, and contain threats in real time.
                 </p>
                 <Link
                   to="/detection"

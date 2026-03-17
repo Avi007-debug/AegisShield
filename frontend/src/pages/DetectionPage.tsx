@@ -22,7 +22,7 @@ export function DetectionPage() {
           </h1>
         </div>
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          Classify text or images to trace the source and spread of misinformation. Run full analysis to generate propagation graphs.
+          Submit content to identify Patient Zero, detect coordinated amplification, and map the full propagation network.
         </p>
       </div>
 
