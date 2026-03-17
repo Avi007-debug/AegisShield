@@ -1,11 +1,10 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useState, useEffect } from 'react'
+import { NetworkGraph } from './components/NetworkGraph'
+import type { GraphData } from './components/NetworkGraph'
+import { AuditLog } from './components/AuditLog'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
   const [inputText, setInputText] = useState('Bill Gates controls COVID vaccines')
   const [result, setResult] = useState<null | {
     label: string
@@ -16,24 +15,43 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Graph Data State
+  const [graphData, setGraphData] = useState<GraphData | null>(null)
+  const [graphLoading, setGraphLoading] = useState(true)
+  const [graphError, setGraphError] = useState('')
+  const [containLoading, setContainLoading] = useState(false)
+
+  // Fetch graph data
+  const fetchGraph = async () => {
+    setGraphLoading(true)
+    try {
+      const response = await fetch('http://localhost:8000/graph')
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      const data = await response.json()
+      setGraphData(data)
+      setGraphError('')
+    } catch (err) {
+      setGraphError(`Failed to load graph: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setGraphLoading(false)
+    }
+  }
+
+  // Fetch graph on mount
+  useEffect(() => {
+    fetchGraph()
+  }, [])
+
   const classifyText = async () => {
     setLoading(true)
     setError('')
     try {
       const response = await fetch('http://localhost:8000/classify', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: inputText,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: inputText }),
       })
-
-      if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`)
-      }
-
+      if (!response.ok) throw new Error(`Request failed: ${response.status}`)
       const data = await response.json()
       setResult(data)
     } catch (err) {
@@ -43,131 +61,105 @@ function App() {
     }
   }
 
+  const handleContain = async () => {
+    if (!graphData?.superspreader_id) return
+    setContainLoading(true)
+    try {
+      const response = await fetch(`http://localhost:8000/contain/${graphData.superspreader_id}`, {
+        method: 'POST',
+      })
+      if (!response.ok) throw new Error('Containment failed')
+      // Refresh graph to show cut edges
+      await fetchGraph()
+    } catch (e) {
+      console.error(e)
+      alert("Containment action failed")
+    } finally {
+      setContainLoading(false)
+    }
+  }
+
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-        <div style={{ marginTop: '1rem', display: 'grid', gap: '0.5rem', width: 'min(620px, 92vw)' }}>
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            rows={4}
-            style={{ padding: '0.75rem' }}
+    <div className="dashboard-container">
+      <header className="dashboard-header">
+        <h1>Aegis Shield</h1>
+        <div className="badge">Regulatory Defense Platform</div>
+      </header>
+
+      <main className="dashboard-grid">
+        {/* Left Column: Visualization */}
+        <section className="viz-section">
+          <NetworkGraph 
+            data={graphData} 
+            loading={graphLoading} 
+            error={graphError} 
           />
-          <button className="counter" onClick={classifyText} disabled={loading}>
-            {loading ? 'Classifying...' : 'Classify via backend API'}
-          </button>
-          {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
-          {result ? (
-            <pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap', margin: 0 }}>
-{JSON.stringify(result, null, 2)}
-            </pre>
-          ) : null}
-        </div>
-      </section>
+        </section>
 
-      <div className="ticks"></div>
+        {/* Right Column: Controls & Audit */}
+        <aside className="control-section">
+          {/* Analysis Panel */}
+          <div className="panel analysis-panel">
+            <h3>Content Analysis</h3>
+            <textarea
+              className="text-input"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              rows={3}
+              placeholder="Paste suspicious content here..."
+            />
+            <button className="primary-btn" onClick={classifyText} disabled={loading}>
+              {loading ? 'Analyzing...' : 'Analyze Content'}
+            </button>
+            
+            {result && (
+              <div className="result-container">
+                <div className={`verdict-header ${result.label}`}>
+                   {result.label.toUpperCase()}
+                </div>
+                
+                <div className="matrix-grid">
+                  <div className="matrix-cell label">Class</div>
+                  <div className="matrix-cell label">Confidence</div>
+                  
+                  <div className="matrix-cell">Fake</div>
+                  <div className="matrix-cell value">
+                    {(result.fake_probability * 100).toFixed(2)}%
+                  </div>
+                  
+                  <div className="matrix-cell">Real</div>
+                  <div className="matrix-cell value">
+                    {(result.true_probability * 100).toFixed(2)}%
+                  </div>
+                </div>
+              </div>
+            )}
+            {error && <p className="error">{error}</p>}
+          </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          {/* Containment Panel */}
+          <div className="panel containment-panel">
+            <h3>Active Response</h3>
+            <p style={{fontSize: '0.8rem', color: '#aaa', margin: '0 0 1rem 0'}}>
+              Apply surgical edge removal for identified superspreaders.
+            </p>
+            <button 
+              className="primary-btn" 
+              onClick={handleContain} 
+              disabled={containLoading || !graphData?.superspreader_id}
+              style={{ background: '#ef4444' }}
+            >
+              {containLoading ? 'Deploying...' : `Contain Superspreader #${graphData?.superspreader_id || '?'}`}
+            </button>
+          </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          {/* Audit Log Component */}
+          <div style={{ flex: 1, minHeight: 0, marginTop: '1rem' }}>
+             <AuditLog />
+          </div>
+        </aside>
+      </main>
+    </div>
   )
 }
 
